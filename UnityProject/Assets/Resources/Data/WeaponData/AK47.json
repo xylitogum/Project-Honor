@@ -1,0 +1,19 @@
+{
+	"id":10002,
+	"type":"AK47",
+	"damageBase":3.0,
+	"damageFloat":7.0,
+	"shootRecoveryTime":0.116,
+	"bulletCount":1,
+	"bulletSpeed":70.0,
+	"firingType":"continuous",
+	"clipLoadMax":30,
+	"carryMax":90,
+	"reloadClipTime":2.5,
+	"initialOffset":2,
+	"accumuOffsetRecovery":16.0,
+	"accumuOffsetPerShot":8,
+	"accumuOffsetMax":16.0,
+	"speedOffsetCoefficient":0.9,
+	"speedOffsetMax":10.0
+}

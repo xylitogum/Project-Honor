@@ -1,0 +1,19 @@
+{
+	"id":10003,
+	"type":"AWP",
+	"damageBase":8.0,
+	"damageFloat":8.0,
+	"shootRecoveryTime":1.72,
+	"bulletCount":1,
+	"bulletSpeed":75.0,
+	"firingType":"separate",
+	"clipLoadMax":10,
+	"carryMax":30,
+	"reloadClipTime":2.85,
+	"initialOffset":0.0,
+	"accumuOffsetRecovery":10.0,
+	"accumuOffsetPerShot":16.0,
+	"accumuOffsetMax":16.0,
+	"speedOffsetCoefficient":1.2,
+	"speedOffsetMax":15.0
+}
