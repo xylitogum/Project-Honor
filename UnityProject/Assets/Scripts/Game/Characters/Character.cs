@@ -61,7 +61,7 @@ public abstract class Character : MonoBehaviour {
                 Vector2 projectileDirection = other.GetComponent<Rigidbody2D>().velocity;
                 Vector2 origin = transform.position;
                 float closest = projectilePoint.LineClosestDistance(projectileDirection, origin);
-                float hitBoxRadius = GetComponent<BoxCollider2D>().size.x/2;
+				float hitBoxRadius = Mathf.Max(GetComponent<CapsuleCollider2D>().size.x, GetComponent<CapsuleCollider2D>().size.y)/2;
                 //Debug.Log(closest + "/" + hitBoxRadius);
 
                 // calculate Damage
