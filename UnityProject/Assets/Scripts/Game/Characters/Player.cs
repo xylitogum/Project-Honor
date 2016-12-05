@@ -3,9 +3,12 @@ using System.Collections;
 
 public class Player : Character {
     
+	public bool HideCursor = true;
+
 	// Use this for initialization
 	void Start () {
         base.Character_Start();
+		if (HideCursor) Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     }
 	
 	// Update is called once per frame
@@ -43,6 +46,7 @@ public class Player : Character {
             }
         }
     }
+
 
     public override Vector2 getMoveDir()
     {

@@ -14,6 +14,6 @@
 	"accumuOffsetRecovery":10.0,
 	"accumuOffsetPerShot":16.0,
 	"accumuOffsetMax":16.0,
-	"speedOffsetCoefficient":1.2,
-	"speedOffsetMax":15.0
+	"speedOffsetCoefficient":2.8,
+	"speedOffsetMax":45.0
 }

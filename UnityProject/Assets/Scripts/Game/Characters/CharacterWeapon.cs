@@ -222,7 +222,7 @@ public class CharacterWeapon : MonoBehaviour {
 
     
     
-    float getDirOffset()
+    public float getDirOffset()
     {
         float offset = gunData.initialOffset;
         Rigidbody2D rb = owner.GetComponent<Rigidbody2D>();
