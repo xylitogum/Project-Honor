@@ -10,10 +10,10 @@
 	"clipLoadMax":30,
 	"carryMax":90,
 	"reloadClipTime":2.5,
-	"initialOffset":2,
-	"accumuOffsetRecovery":16.0,
-	"accumuOffsetPerShot":8,
+	"initialOffset":1.6,
+	"accumuOffsetRecovery":18.0,
+	"accumuOffsetPerShot":9,
 	"accumuOffsetMax":16.0,
-	"speedOffsetCoefficient":0.9,
-	"speedOffsetMax":10.0
+	"speedOffsetCoefficient":1.2,
+	"speedOffsetMax":16.0
 }

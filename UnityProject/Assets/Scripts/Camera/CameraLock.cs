@@ -4,27 +4,31 @@ using System.Collections;
 public class CameraLock : MonoBehaviour {
     public GameObject target;
     public float height;
-    public float size;
+	private float size;
     public float minSize;
     public float maxSize;
     public float scalingSpeed;
+	private float scaleSize = 1f;
 
     // Use this for initialization
     void Start () {
+		size = maxSize;
         GetComponent<Camera>().orthographicSize = size;
+		scaleSize = 1f;
     }
 	
 	// Update is called once per frame
 	void Update () {
         //Debug.Log(Input.mouseScrollDelta);
 
-        float d = Mathf.Pow(Mathf.Clamp(getMouseDistance(), 0.4f, 1f) + 0.6f, 1.5f) - 0.2f;
+        float d = Mathf.Pow(Mathf.Clamp(getMouseDistance(), 0.4f, 1f) + 0.6f, 2f) - 0.2f;
         //float d = Mathf.Pow(Mathf.Clamp(getMouseDistance(), 0f, 1f) + 1f, 1f);
         
         if (Input.mouseScrollDelta.y != 0)
         {
 
             size = Mathf.Clamp(size - Input.mouseScrollDelta.y * Time.deltaTime * scalingSpeed, minSize, maxSize);
+			scaleSize = size / maxSize;
             
         }
 
@@ -48,4 +52,8 @@ public class CameraLock : MonoBehaviour {
         return d;
     }
 
+	public float getScaleSize() {
+		return GetComponent<Camera>().orthographicSize / maxSize ;
+	}
+	
 }

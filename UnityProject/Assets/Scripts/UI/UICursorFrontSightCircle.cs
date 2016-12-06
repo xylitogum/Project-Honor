@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UICursorFrontSight : MonoBehaviour {
+public class UICursorFrontSightCircle : MonoBehaviour {
 	private Image cursor;
 	public float cursorRadius = 128f;
-	public float minSize = 5f;
+	public float minSize = 1f;
 	public float maxSize = 1000f;
-
+	//private float orthoSize;
 	// Use this for initialization
 	void Start () {
 		cursor = GetComponent<Image>();;
-
+		//orthoSize = Camera.main.orthographicSize;
 
 	}
-	
+
 	// Update is called once per frame
 	void Update () {
 		Character p = GameManager.player;
@@ -33,10 +33,11 @@ public class UICursorFrontSight : MonoBehaviour {
 		radiusOnScreen = Mathf.Clamp(radiusOnScreen, minSize, maxSize);
 		//Debug.Log(radiusOnScreen);
 
+		float scaleSize = Mathf.Max(0.01f, Camera.main.GetComponent<CameraLock>().getScaleSize());
 
-		transform.localScale = Vector2.one *  radiusOnScreen / cursorRadius;
+		transform.localScale = Vector2.one *  (radiusOnScreen / cursorRadius) * scaleSize;
 
-		transform.position = Input.mousePosition;
+
 
 	}
 }

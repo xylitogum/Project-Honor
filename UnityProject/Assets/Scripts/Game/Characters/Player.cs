@@ -9,6 +9,7 @@ public class Player : Character {
 	void Start () {
         base.Character_Start();
 		if (HideCursor) Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+
     }
 	
 	// Update is called once per frame
@@ -19,6 +20,7 @@ public class Player : Character {
         
         //Debug.Log(turndir);
         turn(getTurnDir());
+
 
         if (Input.GetKeyDown(KeyCode.R))
         {
@@ -89,3 +91,112 @@ public class Player : Character {
 
 
 }
+
+/*
+
+using UnityEngine;
+using System.Collections;
+
+public class LaserScript : MonoBehaviour {
+	private LineRenderer line;
+	private bool firing;
+	private Ray ray;
+	private RaycastHit hit;
+	public float dps;
+	public float energy_cost; // every second
+	public GameObject hitFX;
+
+
+	// Use this for initialization
+	void Start () {
+		line = gameObject.GetComponent<LineRenderer> ();
+		line.enabled = false;
+		firing = false;
+
+
+	}
+
+	// Update is called once per frame
+	void Update () {
+		//Debug.Log (firing);
+		Player p = GameController.player;
+
+		//Debug.Log(gameObject.transform.root.gameObject.name);
+		if (Input.GetKey (KeyCode.Space)) {
+			if (p.costEnergy(energy_cost * Time.deltaTime)) {
+				if (!isFiring()) {
+					StartFireLaser();
+				}
+				else {
+					FireLaser();
+				}
+			}
+			else {
+				StopFireLaser();
+			}
+		} else {
+			StopFireLaser();
+		}
+
+	}
+
+	void UpdateRay() {
+		ray.origin = transform.position;
+		ray.direction = transform.up;
+	}
+
+	void UpdateLine() {
+
+		line.SetWidth (0.05f, 0.05f);
+		line.SetColors (Color.red, Color.red);
+		line.SetPosition (0, ray.origin);
+		line.SetPosition (1, ray.GetPoint (20)); 
+	}
+
+
+	bool isFiring() {
+		return firing;
+	}
+	void StopFireLaser() {
+		//Debug.Log ("Stop Laser");
+		line.enabled = false;
+		firing = false;
+	}
+
+	void StartFireLaser() {
+
+		firing = true;
+		//Debug.Log ("Start Laser");
+		line.enabled = true;
+		FireLaser();
+	}
+
+	void FireLaser() {
+		firing = true;
+		UpdateRay();
+		UpdateLine();
+		// raycast
+		if (Physics.Raycast (ray, out hit, 20)) {
+			line.SetPosition (1, hit.point);
+			if (hit.rigidbody) {
+				//hit.rigidbody.AddForceAtPosition(transform.up * 200f, hit.point);
+			}
+			GameObject gmo = hit.collider.transform.root.gameObject;
+			Ship p = gmo.GetComponent<Ship> ();
+			if (p != null) {
+				//					Debug.Log("Hit");
+				p.takeDamage (dps * Time.deltaTime);
+				if (hitFX != null) {
+					//hitFX.transform.position = hit.transform.position;
+					Instantiate (hitFX, hit.transform.position, Quaternion.identity);
+				}
+			}
+		} else {
+			//line.SetPosition (1, ray.GetPoint (20)); 
+		}
+
+
+	}
+}
+
+*/
