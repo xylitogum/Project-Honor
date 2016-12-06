@@ -31,7 +31,7 @@ public class UICursorFrontSight : MonoBehaviour {
 		);
 
 		radiusOnScreen = Mathf.Clamp(radiusOnScreen, minSize, maxSize);
-		Debug.Log(radiusOnScreen);
+		//Debug.Log(radiusOnScreen);
 
 
 		transform.localScale = Vector2.one *  radiusOnScreen / cursorRadius;

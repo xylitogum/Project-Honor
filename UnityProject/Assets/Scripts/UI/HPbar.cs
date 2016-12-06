@@ -14,7 +14,7 @@ public class HPbar : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         float hprate = 0f;
-        if (GameManager.player.getMaxHealth() >= 0f) {
+		if (GameManager.player != null && GameManager.player.getMaxHealth() >= 0f) {
             hprate = GameManager.player.getHealth() / GameManager.player.getMaxHealth();
             //hprate = Mathf.Max(0f, Mathf.Min(1f, hprate));
             hprate = Mathf.Clamp(hprate, 0f, 1f);
