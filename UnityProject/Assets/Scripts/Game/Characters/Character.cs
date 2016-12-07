@@ -10,8 +10,8 @@ public abstract class Character : MonoBehaviour {
     public GameObject FX_hit_blood;
     public GameObject FX_Crit_hit_blood;
 
-    float intervalCenter = 0.12f; // inner circle
-    float intervalMiddle = 0.5f; // middle circle
+    float intervalCenter = 0.15f; // inner circle
+    float intervalMiddle = 0.7f; // middle circle
 
     // Use this for initialization
     public void Character_Start () {
@@ -76,14 +76,14 @@ public abstract class Character : MonoBehaviour {
                 else if (closestRatio < intervalMiddle) // middle circle
                 {
                     damageFloatCof = 0.3f;
-                    if (Random.Range(0f, 1f) < 0.3f)
+                    if (Random.Range(0f, 1f) < 0.25f)
                     {
                         damageFloatCof = 0.6f;
                     }
                 }
                 else // outer circle
                 {
-                    if (Random.Range(0f, 1f) < 0.3f)
+                    if (Random.Range(0f, 1f) < 0.25f)
                     {
                         damage = 0f;
                     }

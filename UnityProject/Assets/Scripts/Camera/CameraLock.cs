@@ -47,8 +47,8 @@ public class CameraLock : MonoBehaviour {
         float dY = Mathf.Abs(2f * (Mathf.Clamp(Input.mousePosition.y, 0f, Screen.height) / Screen.height - 0.5f));
 
         //float d = 1f - ((1f - dX) * (1f - dY));
-        float d = Mathf.Max(dX , dY);
-        
+        //float d = Mathf.Max(dX , dY);
+		float d = Mathf.Sqrt(dX * dX + dY * dY);
         return d;
     }
 
