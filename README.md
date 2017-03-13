@@ -1,5 +1,5 @@
 # Project-Honor
-
+A top-down shooter game that needs AI implemented.
 
 - Put any art assets under Art\ folder
 - Put any documents for reference under Documents\ folder
