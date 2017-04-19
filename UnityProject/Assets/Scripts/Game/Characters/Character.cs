@@ -1,24 +1,51 @@
 ﻿using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
+using Assets.Scripts.FSM_Strategic;
+using UnityEngine.AI;
 
+/// <summary>
+/// An abstract base class for building game characters,
+/// either human or AI controlled. Contains all the base game rule logic
+/// as well as many utility functions which can be used by AI agents for
+/// decision making.
+/// </summary>
+[RequireComponent (typeof (CapsuleCollider))]
+[RequireComponent (typeof (Rigidbody))]
+/// <summary>
+/// Represents a Character.
+/// </summary>
 public abstract class Character : MonoBehaviour {
-    public float speed;
-    float health;
-    public float maxHealth;
-    public float healthRecovery;
-    public CharacterWeapon weapon;
-    public GameObject FX_hit_blood;
-    public GameObject FX_Crit_hit_blood;
+	public Team team; // which team is this character in?
+    public float speed; // movement speed
+    float health; // health points. dies when below zero.
+    public float maxHealth; // health points can go above maximum.
+    public float healthRecovery; // health points recovers per second
+    public CharacterWeapon weapon; // the weapon this character is using
+    public GameObject FX_hit_blood; // particle effects of blood
+    public GameObject FX_Crit_hit_blood; // particle effects of blood
 
-    float intervalCenter = 0.15f; // inner circle
-    float intervalMiddle = 0.7f; // middle circle
+    public Vector3 destination;     // point on the map that the character is currently pathing to
+    public bool orders = false;     // whether or not the character is executing Strategic AI commands
+    public StrategicCommand strategicOrders;
+    int destTimer = 0;
+
+    float HitBoxCenter = 0.15f; // inner circle
+    float HitBoxMiddle = 0.7f; // middle circle
+
+    private NavMeshAgent navMeshAgent;
 
     // Use this for initialization
     public void Character_Start () {
         this.health = maxHealth;
         this.weapon.setOwner(this);
-        
 
+        destination = this.transform.position;
+        //orders = false;
+
+        // Don't allow the NavMeshAgent to modify the agent's rotation
+        navMeshAgent = GetComponent<NavMeshAgent>();
+        navMeshAgent.updateRotation = false;
+        navMeshAgent.avoidancePriority = (int)(Random.Range(0f, 1f) * 100);
     }
 
     // Update is called once per frame
@@ -28,77 +55,49 @@ public abstract class Character : MonoBehaviour {
         }
     }
 
-    public void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.gameObject.tag == "Projectile")
-        {
-            Rigidbody2D rb = GetComponent<Rigidbody2D>();
+	// hit by a projectile
+    public void OnCollisionEnter(Collision col) {
+		
+		if (col.gameObject.tag == "Projectile") {
+			Rigidbody rb = GetComponent<Rigidbody>();
             GameObject fx = FX_hit_blood;
 
             // calculating point of FX
 
-            RaycastHit hitray;
-            Vector3 hitpoint = other.transform.position;
-            if (Physics.Raycast(transform.position, transform.forward, out hitray))
-            {
-                hitpoint = hitray.point;
-            }
+            //RaycastHit hitray;
+			Vector3 hitpoint = col.contacts[0].point;
+
             // calculating direction of FX
 
-            Vector2 rv = other.GetComponent<Rigidbody2D>().velocity;// - this.GetComponent<Rigidbody2D>().velocity;
-            float reflectangle = Mathf.Rad2Deg * Mathf.Atan2(rv.y, rv.x);
+			Vector3 rv = col.relativeVelocity;
+            float reflectangle = Mathf.Rad2Deg * Mathf.Atan2(rv.z, rv.x);
 
-            
+			Bullet blt = col.gameObject.GetComponent<Bullet>();
 
-            
-            // hit
-            if (this != other.GetComponent<Bullet>().getOwner())
-            {
-                Bullet blt = other.gameObject.GetComponent<Bullet>();
-
+            // hit enemy
+			if (this.team != blt.getOwner().team) {
+				
                 // calculating distance from center
-                Vector2 projectilePoint = other.transform.position;
-                Vector2 projectileDirection = other.GetComponent<Rigidbody2D>().velocity;
-                Vector2 origin = transform.position;
+				Vector2 projectilePoint = new Vector2(col.transform.position.x, col.transform.position.z);
+				Vector2 projectileDirection = new Vector2(col.relativeVelocity.x, col.relativeVelocity.z);
+				Vector2 origin = new Vector2(transform.position.x, transform.position.z);
                 float closest = projectilePoint.LineClosestDistance(projectileDirection, origin);
-				float hitBoxRadius = Mathf.Max(GetComponent<CapsuleCollider2D>().size.x, GetComponent<CapsuleCollider2D>().size.y)/2;
+				float hitBoxRadius = GetComponent<CapsuleCollider>().radius;
                 //Debug.Log(closest + "/" + hitBoxRadius);
 
                 // calculate Damage
-                float damage = blt.getDamage();
-                
-                float closestRatio = closest / hitBoxRadius;
-                float damageFloatCof = 0f;
-                if (closestRatio < intervalCenter) // inner circle
-                {
-                    damageFloatCof = 1f;
-                }
-                else if (closestRatio < intervalMiddle) // middle circle
-                {
-                    damageFloatCof = 0.3f;
-                    if (Random.Range(0f, 1f) < 0.25f)
-                    {
-                        damageFloatCof = 0.6f;
-                    }
-                }
-                else // outer circle
-                {
-                    if (Random.Range(0f, 1f) < 0.25f)
-                    {
-                        damage = 0f;
-                    }
-                }
+
+				float closestRatio = closest / hitBoxRadius;
+				float damage = calcDamage(blt.getDamage(), blt.getDamageFloat(), closestRatio);
                 // calc done
 
-                damage += blt.getDamageFloat() * damageFloatCof;
+                
                 //Debug.Log(closestRatio);
-                if (damage >= 0.01f)
-                {
+				if (damage >= 0.01f) { // deals damage
                     // Crit FX
-                    if (damageFloatCof >= 0.99f)
-                    {
+					if (damage > blt.getDamage() + blt.getDamageFloat() * 0.999f) { //
                         fx = FX_Crit_hit_blood;
-                        // full blood
+                        // full blood effect
                         GameObject fx1 = (GameObject)Instantiate(fx, hitpoint, Quaternion.Euler(reflectangle, -90f, 0f));
                         ParticleSystem ps1 = fx1.GetComponent<ParticleSystem>();
                         var vel1 = ps1.velocityOverLifetime;
@@ -106,29 +105,31 @@ public abstract class Character : MonoBehaviour {
                         vel1.space = ParticleSystemSimulationSpace.World;
                         vel1.x = rb.velocity.x;
                         vel1.y = rb.velocity.y;
-                        vel1.z = 0;
-                        ps1.Emit((int)Random.Range(55f, 85f));
+						vel1.z = rb.velocity.z;
+                        ps1.Emit(Random.Range(55, 85));
                     }
                     else
                     {
                         fx = FX_hit_blood;
-                        // income blood
-                        GameObject fx1 = (GameObject)Instantiate(fx, hitpoint, Quaternion.Euler(reflectangle, -90f, 0f));
+                        // income blood effect
+                        GameObject fx1 = (GameObject)Instantiate(fx, hitpoint, Quaternion.Euler(0f, -reflectangle-90f, 0f));
                         ParticleSystem ps1 = fx1.GetComponent<ParticleSystem>();
-                        ps1.startLifetime = 0.50f;
+						var ma1 = ps1.main;
+                        ma1.startLifetime = 0.50f;
                         var vel1 = ps1.velocityOverLifetime;
                         vel1.enabled = true;
                         vel1.space = ParticleSystemSimulationSpace.World;
                         vel1.x = rb.velocity.x;
                         vel1.y = rb.velocity.y;
-                        vel1.z = 0;
-                        ps1.Emit((int)Random.Range(25f, 35f));
+						vel1.z = rb.velocity.z;
+						ps1.Emit(Random.Range(25, 35));
 
                         // outleft blood
-                        GameObject fx2 = (GameObject)Instantiate(fx, hitpoint, Quaternion.Euler(180f + reflectangle, -90f, 0f));
+                        GameObject fx2 = (GameObject)Instantiate(fx, hitpoint, Quaternion.Euler(0f, -reflectangle+90f, 0f));
                         ParticleSystem ps2 = fx2.GetComponent<ParticleSystem>();
-                        ps1.startLifetime = 0.60f;
-                        ps2.startSize = 0.2f;
+						var ma2 = ps1.main;
+                        ma2.startLifetime = 0.60f;
+                        ma2.startSize = 0.2f;
                         var sh = ps2.shape;
                         sh.angle = 25f;
                         var vel2 = ps2.velocityOverLifetime;
@@ -136,7 +137,7 @@ public abstract class Character : MonoBehaviour {
                         vel2.space = ParticleSystemSimulationSpace.World;
                         vel2.x = rb.velocity.x;
                         vel2.y = rb.velocity.y;
-                        vel2.z = 0;
+						vel2.z = rb.velocity.z;
                         ps2.Emit((int)Random.Range(55, 85));
                     }
 
@@ -144,25 +145,16 @@ public abstract class Character : MonoBehaviour {
 
                     // HIT
 
-                    if (blt.getOwner().isEnemy() != this.isEnemy())
-                    {
+					if (blt.getOwner().team != this.team) {
                         hit(damage);
                     }
-                    Physics2D.IgnoreCollision(other, GetComponent<Collider2D>(), true);
-                    blt.setOwner(this);
 
+					Physics.IgnoreCollision(col.collider, GetComponent<Collider>(), true);
+                    //blt.setOwner(this);
 
+					// Destroy the bullet
+					Destroy(col.gameObject);
 
-                    if (damage <= 3f)
-                    {
-                        Destroy(other.gameObject);
-                    }
-                    else
-                    {
-                        other.GetComponent<Rigidbody2D>().velocity = 0.4f * other.GetComponent<Rigidbody2D>().velocity;
-                        blt.setDamage(0.5f * blt.getDamage());
-                        blt.setDamageFloat(0.5f * blt.getDamageFloat());
-                    }
                 }
                 
                 
@@ -175,28 +167,80 @@ public abstract class Character : MonoBehaviour {
         }
     }
 
-    public void move(Vector2 direction)
-    {
-        Vector2 normdir = direction.normalized;
-        Vector2 disp = speed * normdir;
-        Vector3 d = new Vector3(disp.x, disp.y, 0f);
 
-        transform.GetComponent<Rigidbody2D>().velocity = d;
-    }
 
-    public void fire()
-    {
+
+	/// <summary>
+	/// Calculates the damage.
+	/// </summary>
+	/// <returns>The damage.</returns>
+	/// <param name="baseDamage">Base damage.</param>
+	/// <param name="floatDamage">Float damage.</param>
+	/// <param name="closestRatio">ClosestRatio.</param>
+	private float calcDamage(float baseDamage, float floatDamage, float closestRatio) {
+		float damage = baseDamage;
+		float damageFloatCof = 0f;
+		if (closestRatio < HitBoxCenter) { // inner circle
+			damageFloatCof = 1f; // Full Damage (base + float)
+		}
+		else if (closestRatio < HitBoxMiddle) { // middle circle
+			damageFloatCof = 0.3f; // do 30% float damage
+			if (Random.Range(0f, 1f) < 0.25f) { // 25% chance do 60% float damage
+				damageFloatCof = 0.6f;
+			}
+		}
+		else { // outer circle
+			// do 0% float damage
+			if (Random.Range(0f, 1f) < 0.25f) { // 25% chance do no damage
+				damage = 0f;
+			}
+		}
+		damage += floatDamage * damageFloatCof;
+		return damage;
+	}
+
+	#region COMMAND
+	/// <summary>
+	/// Immediately attempts to fire towards current direction.
+	/// It may not always succeed depending on weapon cooldown.
+	/// </summary>
+    public bool fire() {
        
-        this.weapon.fire(getFacingDir());
+        return this.weapon.fire(getFacingDir());
     }
 
-    public void turn(Vector2 direction)
-    {
+	/// <summary>
+	/// Turn to the specified direction immediately.
+	/// </summary>
+	/// <param name="direction">Direction Vector(x, z).</param>
+    public bool turn(Vector2 direction) {
         //Debug.Log(direction);
-        float rot = Mathf.Rad2Deg * Mathf.Atan2(direction.y, direction.x) - 90f;
-
-        transform.rotation = Quaternion.Euler(0f, 0f, rot);
+        float rot = - Mathf.Rad2Deg * Mathf.Atan2(direction.y, direction.x) + 90f;
+		transform.rotation = Quaternion.Euler(0f, rot, 0f);
+		return true;
     }
+
+
+	/// <summary>
+	/// Start reload weapon.
+	/// </summary>
+	public bool reload() {
+		return this.weapon.reload();
+	}
+
+	#endregion
+
+	/// <summary>
+	/// Move towards specified direction. Only used for Human Controllers
+	/// </summary>
+	/// <param name="direction">Direction.</param>
+	public void move(Vector2 direction)
+	{
+		Vector2 dir = speed * direction.normalized;
+		Vector3 disp = new Vector3(dir.x, 0f, dir.y);
+
+		transform.GetComponent<Rigidbody>().velocity = disp;
+	}
 
     public virtual Vector2 getMoveDir()
     {
@@ -208,12 +252,202 @@ public abstract class Character : MonoBehaviour {
         return Vector2.zero;
     }
 
+	/// <summary>
+	/// Gets the current Facing direction vector(x, z).
+	/// </summary>
+	/// <returns>The facing dir.</returns>
     public Vector2 getFacingDir()
     {
-        float rot = transform.rotation.eulerAngles.z - 270f;
+		float rot = 90 - transform.rotation.eulerAngles.y;
         //Debug.Log(rot);
         Vector2 direction = new Vector2(Mathf.Cos(Mathf.Deg2Rad * rot), Mathf.Sin(Mathf.Deg2Rad *  rot));
         return direction;
+    }
+
+    /// <summary>
+    /// Gets a list of characters who are opponents of this character, i.e.
+    /// not on the same team.
+    /// </summary>
+    /// <returns>A list of opponent characters</returns>
+    public List<Character> GetOpponents()
+    {
+        var teams = GameManager.instance.teams;
+        List<Character> opponents = new List<Character>();
+        foreach (var team in teams) {
+            if(team.name != this.team.name) {
+                opponents.AddRange(team.members);
+            }
+        }
+        return opponents;
+    }
+
+
+    /// <summary>
+    /// Gets a list of characters who are on the same team as this character.
+    /// </summary>
+    /// <returns>A list of teammate characters</returns>
+    public List<Character> GetTeam()
+    {
+        var teams = GameManager.instance.teams;
+        List<Character> teammates = new List<Character>();
+        foreach (var team in teams)
+        {
+            if (team.name == this.team.name)
+            {
+                teammates.AddRange(team.members);
+            }
+        }
+        return teammates;
+    }
+
+
+
+    /// <summary>
+    /// Gets a list of teammates of this character
+    /// </summary>
+    /// <returns>The list of characters on the team, "this" character excluded</returns>
+    public List<Character> GetTeammates()
+    {
+        var teams = GameManager.instance.teams;
+        List<Character> teammates = new List<Character>();
+        foreach (var team in teams) {
+            if(team.name == this.team.name) {
+                teammates.AddRange(team.members);
+            }
+        }
+        teammates.Remove(this);
+        return teammates;
+    }
+
+    /// <summary>
+    /// Finds the closest character to this one from a list.
+    /// </summary>
+    /// <param name="characters">The list of characters</param>
+    /// <returns>The closest character in the list</returns>
+    public Character GetClosestCharacter(List<Character> characters)
+    {
+        Character closest = null;
+        float closestDistance = float.PositiveInfinity;
+        foreach (var chara in characters)
+        {
+            var distance = Vector3.Distance(chara.transform.position, this.transform.position);
+            if (distance < closestDistance)
+            {
+                distance = closestDistance;
+                closest = chara;
+            }
+        }
+        return closest;
+    }
+
+    /// <summary>
+    /// Gets the closest character who is not on the same team.
+    /// </summary>
+    /// <returns>The closest character or null if there are no opponents</returns>
+    public Character GetClosestOpponent()
+    {
+        return GetClosestCharacter(GetOpponents());
+    }
+
+    /// <summary>
+    /// Gets the closest character who is on the same team.
+    /// </summary>
+    /// <returns>The closest character or null if there are no allys</returns>
+    public Character GetClosestTeammate()
+    {
+        return GetClosestCharacter(GetTeam());
+    }
+
+    /// <summary>
+    /// Returns true iff the character is not visible to any enemies
+    /// </summary>
+    /// <returns>Whether or not the character is in a safe location</returns>
+    public bool InSafeSpot()
+    {
+        var opponents = GetOpponents();
+        foreach (var enemy in opponents)
+        {
+            if (GameManager.instance.tileManager.PositionCanSeePosition(enemy.transform.position, transform.position)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Returns true iff the character can see an enemy
+    /// </summary>
+    /// <returns>Whether or not the character can see an enemy</returns>
+    public bool CanSeeEnemy()
+    {
+        var opponents = GetOpponents();
+        foreach (var enemy in opponents)
+        {
+            if (GameManager.instance.tileManager.PositionCanSeePosition(enemy.transform.position, transform.position, GetTeammates()))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Gets whether this character has line of sight to the given character.
+    /// </summary>
+    /// <param name="ch">The character to check line of sight on</param>
+    /// <returns>True if this character has line of sight</returns>
+    public bool HasLineOfSight(Character ch)
+    {
+        return GameManager.instance.tileManager.PositionCanSeePosition(transform.position, ch.transform.position, GetTeammates());
+    }
+
+    /// <summary>
+    /// Gets the direction vector to move towards the next location
+    /// in the NavMeshAgent's path
+    /// </summary>
+    /// <returns>The next move direction</returns>
+    public Vector2 GetNavMeshNextMoveDir()
+    {
+        var nextLocation = navMeshAgent.nextPosition;
+        var nextMoveDir = new Vector2(nextLocation.x, nextLocation.z) - new Vector2(transform.position.x, transform.position.z);
+        return nextMoveDir;
+    }
+
+    /// <summary>
+    /// Returns true iff this character has low health
+    /// </summary>
+    /// <returns>True if health is low, else false</returns>
+    public bool HasLowHealth()
+    {
+        return getHealth() < maxHealth * 0.6f; // Changed this to initiate Retreat sooner
+    }
+
+    /// <summary>
+    /// Returns true iff this character has high health
+    /// </summary>
+    /// <returns>True if health is high, else false</returns>
+    public bool HasHighHealth()
+    {
+        return getHealth() > maxHealth * 0.8f;
+    }
+
+
+    /// <summary>
+    /// Returns true iff this character has health greater than 50%
+    /// </summary>
+    /// <returns>True if health is high, else false</returns>
+    public bool HasMediumHealth()
+    {
+        return this.getHealth() > maxHealth * 0.5f;
+    }
+
+    /// <summary>
+    /// Returns true iff this character has ammo in their gun clip
+    /// </summary>
+    /// <returns>True if the clip has ammo, else false</returns>
+    public bool HasAmmo()
+    {
+        return weapon.ammoClipLoad > 0;
     }
 
     public CharacterWeapon getWeapon()
@@ -246,12 +480,13 @@ public abstract class Character : MonoBehaviour {
         this.maxHealth = maxHealth;
     }
 
+	// being hit by a certain damage
     public virtual void hit(float damage)
     {
-        //Debug.Log(damage);
         takeDamage(damage);
     }
 
+	// take certain amount of damage
     public virtual void takeDamage(float damage)
     {
         this.health -= damage;
@@ -260,25 +495,73 @@ public abstract class Character : MonoBehaviour {
             onDeath();
         }
     }
+
+	/// <summary>
+	/// Check if this character is  dead.
+	/// </summary>
+	/// <returns><c>true</c>, if dead, <c>false</c> otherwise.</returns>
     public virtual bool isDead()
     {
         return this.health <= 0;
     }
 
+	// the death event of the character
+	// removes the game object and from teams
     public virtual void onDeath()
     {
+		team.Remove(this);
         Destroy(gameObject);
     }
 
-    public virtual bool isPlayer()
-    {
-        return false;
-    }
-
-    public virtual bool isEnemy()
-    {
-        return false;
-    }
+	public void Remove() {
+		Destroy(gameObject);
+	}
 
    
-}
+    public bool GetOrders()
+    {
+        return orders;
+    }
+
+
+    public Vector3 GetDestination()
+    {
+        return destination;
+    }
+
+
+
+    public void SetOrders(bool order)
+    {
+        orders = order;
+        //Debug.Log("SetOrders Called by Start() Commander");
+    }
+
+
+    public void SetDestination(Vector3 dest)
+    {
+        destination = dest;
+    }
+
+
+    public int GetDestTimer()
+    {
+        return destTimer;
+    }
+
+
+    public void SetDestTimer(int time)
+    {
+        destTimer = time;
+    }
+
+
+    public void IncrementTimer()
+    {
+        destTimer += 1;
+    }
+
+
+
+
+}//END: Class

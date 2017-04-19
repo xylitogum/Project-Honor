@@ -15,7 +15,7 @@ public class CharacterWeapon : MonoBehaviour {
     public int ammoCarry;
     public float reloadClipTimeRemaining { get; set; }
     public float accumuOffset { get; set; }
-    Status status = Status.Idle;
+    Status status = Status.Idle; // the current state of this weapon
     public enum Status
     {
         Idle, // nothing to do here
@@ -130,6 +130,8 @@ public class CharacterWeapon : MonoBehaviour {
             
         }
     }
+
+
     void Update_Firing()
     {
         shootRecoveryTimeRemaining -= Time.deltaTime;
@@ -140,6 +142,8 @@ public class CharacterWeapon : MonoBehaviour {
             shootRecoveryTimeRemaining = 0f;
         }
     }
+
+
     void Update_Idle()
     {
         // check if reloading is necessary
@@ -157,17 +161,17 @@ public class CharacterWeapon : MonoBehaviour {
     {
         if (status == Status.Idle && isClipLoaded())
         {
-            Vector2 dir = new Vector2(direction.x, direction.y).normalized;
+            Vector2 dir2 = new Vector2(direction.x, direction.y).normalized;
             float dirOffset = getDirOffset();
-            dir = dir.Rotate(Random.Range(-dirOffset, dirOffset));
-
+            dir2 = dir2.Rotate(Random.Range(-dirOffset, dirOffset));
+			Vector3 dir3 = new Vector3(dir2.x, 0f, dir2.y);
             // instantiate bullet
-            Rigidbody2D rb = owner.GetComponent<Rigidbody2D>();
+            Rigidbody rb = owner.GetComponent<Rigidbody>();
             Bullet blt = ((GameObject)Instantiate(bullet, firepoint.transform.position, getOwner().transform.rotation)).GetComponent<Bullet>();
             blt.setOwner(getOwner());
             blt.setDamage(gunData.damageBase);
             blt.setDamageFloat((gunData.damageFloat));
-            blt.GetComponent<Rigidbody2D>().velocity = dir * gunData.bulletSpeed + rb.velocity;
+			blt.GetComponent<Rigidbody>().velocity = dir3 * gunData.bulletSpeed + rb.velocity;
 
             // create fire particle effects
             ParticleSystem ps = firepoint.GetComponent<ParticleSystem>();
@@ -225,7 +229,7 @@ public class CharacterWeapon : MonoBehaviour {
     public float getDirOffset()
     {
         float offset = gunData.initialOffset;
-        Rigidbody2D rb = owner.GetComponent<Rigidbody2D>();
+        Rigidbody rb = owner.GetComponent<Rigidbody>();
         offset = offset + accumuOffset + Mathf.Min(
             gunData.speedOffsetMax,
             gunData.speedOffsetCoefficient * rb.velocity.magnitude);

@@ -8,13 +8,13 @@ public class CameraLock : MonoBehaviour {
     public float minSize;
     public float maxSize;
     public float scalingSpeed;
-	private float scaleSize = 1f;
+	//private float scaleSize;
 
     // Use this for initialization
     void Start () {
 		size = maxSize;
         GetComponent<Camera>().orthographicSize = size;
-		scaleSize = 1f;
+		//scaleSize = 1f;
     }
 	
 	// Update is called once per frame
@@ -28,7 +28,7 @@ public class CameraLock : MonoBehaviour {
         {
 
             size = Mathf.Clamp(size - Input.mouseScrollDelta.y * Time.deltaTime * scalingSpeed, minSize, maxSize);
-			scaleSize = size / maxSize;
+			//scaleSize = size / maxSize;
             
         }
 

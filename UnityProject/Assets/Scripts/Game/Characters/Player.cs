@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+/// <summary>
+/// A character implementation that can be controlled by a human player.
+/// </summary>
 public class Player : Character {
     
 	public bool HideCursor = true;
@@ -15,6 +18,8 @@ public class Player : Character {
 	// Update is called once per frame
 	void Update () {
         base.Character_Update();
+
+		if (GameManager.instance.gameState != GameManager.GameState.Running) return;
 
         move(getMoveDir());
         
@@ -31,11 +36,13 @@ public class Player : Character {
 
         if (Input.GetMouseButton(0))
         {
+			// if the weapon shoots continuously, attempt to shoot on everyframe
             if (weapon.gunData.firingType == "continuous")
             {
                 fire();
             }
 
+			// if the weapon shoots separately, attempt to shoot once.
             else if (weapon.gunData.firingType == "separate")
             {
                 if (Input.GetMouseButtonDown(0)) {
@@ -49,39 +56,38 @@ public class Player : Character {
         }
     }
 
-
+	// get move direction from input
     public override Vector2 getMoveDir()
     {
         Vector2 movedir = new Vector2(
             Input.GetAxis("Horizontal"),
             Input.GetAxis("Vertical"));
+		//Debug.Log(movedir);
         return movedir;
     }
 
+	// get turn direction from input
     public override Vector2 getTurnDir()
     {
-        Vector3 mousepoint = Input.mousePosition;
-        mousepoint.z = -Camera.main.transform.position.z;
-        mousepoint = Camera.main.ScreenToWorldPoint(mousepoint);
-        //Debug.Log(mousepoint);
+		Vector3 mousepoint = Input.mousePosition;
+		mousepoint.z = -Camera.main.transform.position.y;
+		mousepoint = Camera.main.ScreenToWorldPoint(mousepoint);
+        
 
-        Vector2 turndir = mousepoint - new Vector3(transform.position.x, transform.position.y);
-        return turndir;
+        Vector3 turndir = mousepoint - new Vector3(transform.position.x, 0f, transform.position.z);
+		//Debug.Log(turndir);
+		return new Vector2(turndir.x, turndir.z);
     }
 
+	// take damage
     public override void hit(float damage)
     {
         base.hit(damage);
-        GameManager.addHitPlayer();
+        //GameManager.addHitPlayer();
 
 
     }
-
-
-    public override bool isPlayer()
-    {
-        return true;
-    }
+		
 
     public override void onDeath()
     {
@@ -91,112 +97,3 @@ public class Player : Character {
 
 
 }
-
-/*
-
-using UnityEngine;
-using System.Collections;
-
-public class LaserScript : MonoBehaviour {
-	private LineRenderer line;
-	private bool firing;
-	private Ray ray;
-	private RaycastHit hit;
-	public float dps;
-	public float energy_cost; // every second
-	public GameObject hitFX;
-
-
-	// Use this for initialization
-	void Start () {
-		line = gameObject.GetComponent<LineRenderer> ();
-		line.enabled = false;
-		firing = false;
-
-
-	}
-
-	// Update is called once per frame
-	void Update () {
-		//Debug.Log (firing);
-		Player p = GameController.player;
-
-		//Debug.Log(gameObject.transform.root.gameObject.name);
-		if (Input.GetKey (KeyCode.Space)) {
-			if (p.costEnergy(energy_cost * Time.deltaTime)) {
-				if (!isFiring()) {
-					StartFireLaser();
-				}
-				else {
-					FireLaser();
-				}
-			}
-			else {
-				StopFireLaser();
-			}
-		} else {
-			StopFireLaser();
-		}
-
-	}
-
-	void UpdateRay() {
-		ray.origin = transform.position;
-		ray.direction = transform.up;
-	}
-
-	void UpdateLine() {
-
-		line.SetWidth (0.05f, 0.05f);
-		line.SetColors (Color.red, Color.red);
-		line.SetPosition (0, ray.origin);
-		line.SetPosition (1, ray.GetPoint (20)); 
-	}
-
-
-	bool isFiring() {
-		return firing;
-	}
-	void StopFireLaser() {
-		//Debug.Log ("Stop Laser");
-		line.enabled = false;
-		firing = false;
-	}
-
-	void StartFireLaser() {
-
-		firing = true;
-		//Debug.Log ("Start Laser");
-		line.enabled = true;
-		FireLaser();
-	}
-
-	void FireLaser() {
-		firing = true;
-		UpdateRay();
-		UpdateLine();
-		// raycast
-		if (Physics.Raycast (ray, out hit, 20)) {
-			line.SetPosition (1, hit.point);
-			if (hit.rigidbody) {
-				//hit.rigidbody.AddForceAtPosition(transform.up * 200f, hit.point);
-			}
-			GameObject gmo = hit.collider.transform.root.gameObject;
-			Ship p = gmo.GetComponent<Ship> ();
-			if (p != null) {
-				//					Debug.Log("Hit");
-				p.takeDamage (dps * Time.deltaTime);
-				if (hitFX != null) {
-					//hitFX.transform.position = hit.transform.position;
-					Instantiate (hitFX, hit.transform.position, Quaternion.identity);
-				}
-			}
-		} else {
-			//line.SetPosition (1, ray.GetPoint (20)); 
-		}
-
-
-	}
-}
-
-*/
